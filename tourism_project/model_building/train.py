@@ -10,8 +10,12 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 import joblib
 import mlflow
+import os
+from pathlib import Path
 
-mlflow.set_tracking_uri("https://economy-marathon-running.ngrok-free.dev")
+ROOT = Path(__file__).resolve().parents[2]
+os.chdir(ROOT)
+mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", (ROOT / "mlruns").as_uri()))
 mlflow.set_experiment("tourism_package_prediction")
 
 
@@ -57,11 +61,11 @@ model_pipeline = make_pipeline(preprocessor, xgb_model)
 
 
 with mlflow.start_run():
-    
+
     grid_search = GridSearchCV(model_pipeline, param_grid, cv=5, n_jobs=-1)
     grid_search.fit(Xtrain, ytrain)
 
-    
+
     results = grid_search.cv_results_
     for i in range(len(results["params"])):
         with mlflow.start_run(nested=True):
@@ -69,27 +73,27 @@ with mlflow.start_run():
             mlflow.log_metric("mean_test_score", results["mean_test_score"][i])
             mlflow.log_metric("std_test_score", results["std_test_score"][i])
 
-    
+
     mlflow.log_params(grid_search.best_params_)
 
- 
+
     best_model = grid_search.best_estimator_
 
-    
+
     classification_threshold = 0.5
 
-  
+
     y_pred_train_proba = best_model.predict_proba(Xtrain)[:, 1]
     y_pred_train = (y_pred_train_proba >= classification_threshold).astype(int)
 
     y_pred_test_proba = best_model.predict_proba(Xtest)[:, 1]
     y_pred_test = (y_pred_test_proba >= classification_threshold).astype(int)
 
-   
+
     train_report = classification_report(ytrain, y_pred_train, output_dict=True)
     test_report = classification_report(ytest, y_pred_test, output_dict=True)
 
-    
+
     mlflow.log_metrics({
         "train_accuracy": train_report['accuracy'],
         "train_precision": train_report['1']['precision'],
@@ -101,7 +105,7 @@ with mlflow.start_run():
         "test_f1-score": test_report['1']['f1-score']
     })
 
-    
+
     model_path = "tourism_project/deployment/best_model.joblib"
     joblib.dump(best_model, model_path)
     mlflow.log_artifact(model_path, artifact_path="model")
