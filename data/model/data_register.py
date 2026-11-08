@@ -1,45 +1,26 @@
-"""Validate the tourism CSV and register its metadata locally."""
+import pandas as pd
 
-import csv
-import hashlib
-import json
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[2]
+RAW_PATH = ROOT / "tourism_project/data/tourism.csv"
+if not RAW_PATH.is_file():
+    raise FileNotFoundError(f"Dataset not found: {RAW_PATH}")
+df = pd.read_csv(RAW_PATH)
 
-def main():
-    root = Path(__file__).resolve().parents[2]
-    dataset = root / "tourism_project/data/tourism.csv"
-    if not dataset.is_file():
-        raise FileNotFoundError(f"Dataset not found: {dataset}")
+expected_columns = [
+    "CustomerID", "ProdTaken", "Age", "TypeofContact", "CityTier",
+    "DurationOfPitch", "Occupation", "Gender", "NumberOfPersonVisiting",
+    "NumberOfFollowups", "ProductPitched", "PreferredPropertyStar",
+    "MaritalStatus", "NumberOfTrips", "Passport", "PitchSatisfactionScore",
+    "OwnCar", "NumberOfChildrenVisiting", "Designation", "MonthlyIncome",
+]
+missing = [c for c in expected_columns if c not in df.columns]
+if missing:
+    raise ValueError(f"Dataset is missing expected columns: {missing}")
 
-    with dataset.open(newline="", encoding="utf-8-sig") as source:
-        reader = csv.reader(source, strict=True)
-        columns = next(reader, None)
-        if not columns or any(not column.strip() for column in columns):
-            raise ValueError("Dataset must contain a non-empty CSV header")
-        if len(set(columns)) != len(columns):
-            raise ValueError("Dataset contains duplicate column names")
-        row_count = 0
-        for line_number, row in enumerate(reader, start=2):
-            if not row:
-                continue
-            if len(row) != len(columns):
-                raise ValueError(f"CSV row {line_number} has an unexpected column count")
-            row_count += 1
-    if not row_count:
-        raise ValueError("Dataset contains no data rows")
-
-    metadata = {
-        "path": dataset.relative_to(root).as_posix(),
-        "columns": columns,
-        "row_count": row_count,
-        "sha256": hashlib.sha256(dataset.read_bytes()).hexdigest(),
-    }
-    manifest = dataset.with_suffix(".metadata.json")
-    manifest.write_text(json.dumps(metadata, indent=2) + "\n", encoding="utf-8")
-    print(f"Registered {row_count} rows from {metadata['path']}")
-    print(f"Local manifest: {manifest.relative_to(root)}")
-
-
-if __name__ == "__main__":
-    main()
+print("Dataset registered successfully.")
+print(f"Rows: {df.shape[0]}, Columns: {df.shape[1]}")
+print("Columns:", list(df.columns))
+print("ProdTaken distribution:")
+print(df["ProdTaken"].value_counts())
