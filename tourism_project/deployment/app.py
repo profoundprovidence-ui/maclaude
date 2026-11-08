@@ -3,7 +3,6 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Dynamically build the path to the model file in the same directory
 current_dir = os.path.dirname(os.path.abspath(__file__))
 model_path = os.path.join(current_dir, "best_model.joblib")
 model = joblib.load(model_path)
@@ -30,7 +29,6 @@ NumberOfChildrenVisiting = st.slider("Number of Children Visited", 0, 5, 1)
 Designation = st.selectbox("Designation", ["Executive", "Manager", "AVP", "VP", "Sr. Manager"])
 MonthlyIncome = st.number_input("Monthly Income", min_value=1000.0, value=30000.0)
 
-# Aligning names with model expectations
 input_data = pd.DataFrame([{
     'Age': Age,
     'TypeofContact': TypeofContact,
