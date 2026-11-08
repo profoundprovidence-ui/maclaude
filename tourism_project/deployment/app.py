@@ -3,13 +3,13 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-
-model_path = os.path.join(os.path.dirname(__file__), "best_model.joblib")   
+# Dynamically build the path to the model file in the same directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+model_path = os.path.join(current_dir, "best_model.joblib")
 model = joblib.load(model_path)
 
 st.title("Tourism Package Prediction")
 st.write("Fill the customer details below to predict if they'll purchase a travel package")
-
 
 Age = st.slider("Age", 18, 70, 30)
 TypeofContact = st.selectbox("Type of Contact", ["Self Enquiry", "Company Invited"])
@@ -30,8 +30,7 @@ NumberOfChildrenVisiting = st.slider("Number of Children Visited", 0, 5, 1)
 Designation = st.selectbox("Designation", ["Executive", "Manager", "AVP", "VP", "Sr. Manager"])
 MonthlyIncome = st.number_input("Monthly Income", min_value=1000.0, value=30000.0)
 
-
-
+# Aligning names with model expectations
 input_data = pd.DataFrame([{
     'Age': Age,
     'TypeofContact': TypeofContact,
@@ -53,12 +52,10 @@ input_data = pd.DataFrame([{
     'MonthlyIncome': MonthlyIncome
 }])
 
-
 classification_threshold = 0.45
 
-
 if st.button("Predict"):
-    prob = model.predict_proba(input_data)[0,1]
+    prob = model.predict_proba(input_data)[0, 1]
     pred = int(prob >= classification_threshold)
     result = "will purchase the travel package" if pred == 1 else "is unlikely to purchase"
     st.write(f"Prediction: Customer {result}")
